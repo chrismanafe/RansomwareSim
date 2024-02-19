@@ -4,6 +4,7 @@ import json
 import os
 from cryptography.fernet import Fernet
 
+
 class Decoder:
     def __init__(self, directory, server_host, server_port):
         self.directory = directory
@@ -16,7 +17,7 @@ class Decoder:
             encrypted_data = file.read()
         decrypted_data = fernet.decrypt(encrypted_data)
 
-        original_file_path = file_path.replace(".denizhalil", "")
+        original_file_path = file_path.replace(".is613G6", "")
         with open(original_file_path, 'wb') as file:
             file.write(decrypted_data)
 
@@ -25,7 +26,7 @@ class Decoder:
     def find_and_decrypt_files(self, key):
         for root, _, files in os.walk(self.directory):
             for file in files:
-                if file.endswith(".denizhalil"):
+                if file.endswith(".is613G6"):
                     file_path = os.path.join(root, file)
                     self.decrypt_file(file_path, key)
 
@@ -38,8 +39,8 @@ class Decoder:
             return response.get('key')
 
     def delete_readme(self):
-
-        desktop_path = os.path.join(os.path.join(os.environ['USERPROFILE']), 'Desktop')
+        home_dir_path = os.path.join(os.environ.get('USERPROFILE', os.environ.get('HOME', '')))
+        desktop_path = os.path.join(home_dir_path, 'Desktop')
         readme_path = os.path.join(desktop_path, 'Readme.txt')
 
         if os.path.exists(readme_path):
@@ -50,9 +51,11 @@ class Decoder:
     def clear_memory(self):
         gc.collect()
         print("Memory cleared.")
+
+
 def main():
-    directory = 'dosyalar/'  # Replace with the target directory path
-    server_host = '10.0.2.37'
+    directory = '/home/kali/demo/'
+    server_host = '127.0.0.1'
     server_port = 12345
     print("Waiting for key...")
 
@@ -70,6 +73,7 @@ def main():
         print(f"An error occurred: {e}\nPlease restart the program.")
 
     decoder.clear_memory()
+
 
 if __name__ == "__main__":
     main()
