@@ -23,7 +23,7 @@ RansomwareSim is a simulated ransomware application developed for educational an
 1. Clone the repository:
 
    ```shell
-   git clone https://github.com/HalilDeniz/RansomwareSim.git
+   git clone https://github.com/chrismanafe/RansomwareSim.git
    ```
 
 2. Navigate to the project directory:
